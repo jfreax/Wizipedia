@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Export the location of any libs
+export LD_LIBRARY_PATH=`pwd`/lib:$LD_LIBRARY_PATH
+
+# Reducing tearingstutter
+./tools/pollux_dpc_set 'lcd_timings=397,1,37,277,341,0,17,337;clkdiv0=9' > log/pollux 2>> log/pollux2
+
+# Run
+./wizipedia > log/warnings 2> log/errors
+
+# Sync the SD card to check that everything is written.
+sync
+
+# Return to the GPH menu screen
+cd /usr/gp2x
+exec /usr/gp2x/gp2xmenu
