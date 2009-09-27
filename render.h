@@ -34,7 +34,6 @@ class CRender
 		std::string title;
 		
 		char* rawData;
-		Uint16* rawData2;
 		std::string data;
 		int length;
 		
@@ -43,7 +42,9 @@ class CRender
 		int position;
 		double postionOffset;
 		std::map < SDL_Surface*, SDL_Rect > renderText;
+		std::map < SDL_Surface*, SDL_Rect > renderLinks;
 		std::vector < SDL_Rect > lines;
+		std::vector < std::string > links;
 		
 		std::map < SDL_Surface*, SDL_Rect > index; /* SDL_Rect::h = the level in the index */
 		

@@ -122,20 +122,23 @@ int replace ( std::string* text, std::string searchStr, std::string replaceStr )
 }
 
 
-int replaceWildcard ( std::string* text, std::string searchBegin, std::string searchEnd, std::string replaceStr )
+std::vector < std::string > replaceWildcard ( std::string* text, std::string searchBegin, std::string searchEnd, std::string replaceStr )
 {
 	int results = 0;
+	std::vector < std::string > resultsStr;
 	
-	int i = text->find ( searchBegin );
+	int i = text->find ( searchBegin ), j;
 	while ( i != std::string::npos ) {
 		++results;
+		j = text->find ( searchEnd, i+1 ) - i;
 		
-		text->replace ( i, text->find ( searchEnd, i+1 ) - i + searchEnd.length(), replaceStr );
+		resultsStr.push_back ( text->substr ( i+searchBegin.length(), j - searchEnd.length() ) );
+		text->replace ( i, j + searchEnd.length(), replaceStr );
 	
 		i = text->find ( searchBegin, i + replaceStr.length() );
 	}
 	
-	return results;
+	return resultsStr;
 }
 
 } // namespace util

@@ -32,7 +32,6 @@
 CRender::CRender()
 {
 	rawData = new char[0x100000];
-	rawData2 = new Uint16[0x100000];
 	
 	position = 50;
 	postionOffset = 0.0f;
@@ -62,7 +61,6 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	}
 	
 	/* read uncrompressed data */
-// 	length = BZ2_bzread ( bFile, rawData2, 0x100000 );
 	length = BZ2_bzread ( bFile, rawData, 0x100000 );
 	data = rawData;
 	
@@ -71,10 +69,6 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	
 	SDL_Color color = { 100, 100, 100 };
 	SDL_Rect rect; rect.x = 0; rect.y = 0;
-// TTF_RenderUNICODE_Blended ( GetWizipedia()->GetHeaderFont(),rawData2, color );
-// 	SDL_BlitSurface ( TTF_RenderUNICODE_Blended ( GetWizipedia()->GetHeaderFont(),rawData2, color ), NULL, GetWizipedia()->GetScreen(), &rect );
-	
-// 	std::cout << "HIER!!!" << std::endl;
 	
 	/* find article */
 	int pageBegin = data.find ( "<title>" + title_ + "</title>" );
@@ -94,24 +88,33 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	/* Delete unneeded 
 	   --------------- */
 	util::replaceWildcard ( &text, "[[Datei:", "]]" );
+	
+	/* */
+	std::string str;
+	str = (char)0xc3; str += (char)0x84;
+	util::replace ( &text, str, "Ä" );
+	str = (char)0xc3; str += (char)0xA4;
+	util::replace ( &text, str, "ä" );
+	str = (char)0xc3; str += (char)0x96;
+	util::replace ( &text, str, "Ö" );
+	str = (char)0xc3; str += (char)0xb6;
+	util::replace ( &text, str, "ö" );
+	str = (char)0xc3; str += (char)0x9c;
+	util::replace ( &text, str, "Ü" );
+	str = (char)0xc3; str += (char)0xbc;
+	util::replace ( &text, str, "ü" );
+	str = (char)0xc3; str += (char)0x9f;
+	util::replace ( &text, str, "ß" );
 
 	/* Add needed stuff
 	/* ---------------- */
 	util::replace ( &text, "\n", " \n " );
 	util::replace ( &text, "\t", " \n " );
 	util::replace ( &text, "== ", "==" ); util::replace ( &text, " ==", "==" );
+	/* find links */
+	links = util::replaceWildcard ( &text, "[[", "]]", " .-hyper|link-. " );
 	
-	/* */
-	std::string str;
-	str = (char)0xc3; str += (char)0x84;
-	util::replace ( &text, str, "Ä" );
-	str = (char)0xc3; str += (char)0xb6;
-	util::replace ( &text, str, "ö" );
-	str = (char)0xc3; str += (char)0xbc;
-	util::replace ( &text, str, "ü" );
-	str = (char)0xc3; str += (char)0x9f;
-	util::replace ( &text, str, "ß" );
-
+	
 	
 	return true;
 }
@@ -125,14 +128,13 @@ bool CRender::Render()
 		return false;
 	
 	TTF_Font* font = GetWizipedia()->GetDefaultFont();
-	SDL_Color color = { 255, 255, 255 };
+	SDL_Color colorDefault = { 255, 255, 255 };
+	SDL_Color colorLink = { 70, 70, 220 };
+	SDL_Color* color = &colorDefault;
 	SDL_Rect rect; rect.x = 1; rect.y = 3;
 
-// 	std::wstring test = L"LALA";
 	/* Title */
-// 	TTF_RenderUNICODE_Blended ( 
-	SDL_Surface* currentWord = TTF_RenderText_Blended ( GetWizipedia()->GetHeaderFont(), title.c_str(), color );
-// 	SDL_Surface* currentWord = /*TTF_RenderUNICODE_Blended ( GetWizipedia()->GetHeaderFont(), test.c_str(), color );*/
+	SDL_Surface* currentWord = TTF_RenderText_Blended ( GetWizipedia()->GetHeaderFont(), title.c_str(), *color );
 	SDL_Surface* lastWord = NULL;
 	renderText.insert ( std::make_pair < SDL_Surface*, SDL_Rect > ( currentWord, rect ) );
 	
@@ -141,13 +143,27 @@ bool CRender::Render()
 	lines.push_back ( rect );
 	rect.y += 3;
 	
+	/* Width of a Space-Character */
+	int width;
+	TTF_SizeText ( GetWizipedia()->GetDefaultFont(), " ", &width, NULL );
+	
+	/* Hyperlinklist */
+	std::vector < std::string >::iterator currentLinks = links.begin();
+	
 	/* Find the next word -> render it -> save the rendered image */
 	bool addLine = false; int addToIndex = 0;
 	int lineBreak = 0, hightest = 0;
-	std::string wordToRender;
+	std::string wordToRender, lastWordToRender;
 	int i = 0, oldi = 0, lb = 0;
 	while ( i != -1 ) {
+		/* Restore defaults */
+		color = &colorDefault;
+		
+		/* Save old data */
 		oldi = i;
+		lastWordToRender = wordToRender;
+		if ( currentWord )
+			lastWord = currentWord;
 		
 		/* Search for a space */
 		i = text.find ( " ", i+1 );
@@ -175,11 +191,30 @@ bool CRender::Render()
 			font = GetWizipedia()->GetDefaultFont();
 		}
 		
-		/* Render one word
+
+		/* Find hyperlinks
 		   --------------- */
-		if ( currentWord )
-			lastWord = currentWord;
-		currentWord = TTF_RenderText_Blended ( font, wordToRender.c_str(), color );
+		if ( util::replace ( &wordToRender, ".-hyper|link-." ) ) {
+			wordToRender = (*currentLinks);
+			++currentLinks;
+			
+			int findPipe = wordToRender.find ( "|" );
+			if ( findPipe != std::string::npos )
+				wordToRender = wordToRender.substr ( findPipe + 1 ); 
+			
+// 			rect.x += width;
+			color = &colorLink;
+		}
+// 		if ( color == &colorLink && ( util::replace ( &wordToRender, "]]" ) || util::replace ( &lastWordToRender, "]]" ) ) ) {
+// 			color = &colorDefault;
+// 		} else if ( util::replace ( &wordToRender, "[[" ) ) {
+// 			color = &colorLink;
+// 		}
+		
+		/* Render one word
+		--------------- */
+		currentWord = TTF_RenderText_Blended ( font, wordToRender.c_str(), *color );
+
 		
 		/* Rendering ok? */
 		if ( currentWord ) {
@@ -226,6 +261,11 @@ bool CRender::Render()
 				rect.x = 1;
 				
 				--lineBreak;
+			}
+			
+			/* Remove the space character after a link in the next word */
+			if ( color == &colorLink ) {
+				rect.x -= width;
 			}
 		}
 		
