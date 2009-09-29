@@ -1,0 +1,41 @@
+1. Was ist "Wizipedia"?
+-----------------------
+
+Wizipedia ist ein offline wikipedia Leseprogramm für den GP2X Wiz.
+
+
+2. Installiere Wizipedia
+------------------------
+
+- lade dir die aktuellste Version herunter (-> Abschnitt 3) und entpacke ihn auf deiner Festplatte (nicht der Wiz!)
+- nun benötigst du ein Abbild der aktuellen Wikipedia
+	zum Beispiel hier für alle aktuellen deutschen Artikel: wget http://download.wikipedia.org/dewiki/latest/dewiki-latest-pages-articles.xml.bz2 (rund 1.6GiB!)
+- dann teile diese riesen Datei in viele kleinere auf: bzip2recover dewiki-latest-pages-articles.xml.bz2 (das kann je nach System sehr lange dauern)
+- lösche die große Datei, du brauchst sie nicht mehr
+- kopiere alle neuen (kleinen) Dateien in den "wikipedia"-Unterordner
+- öffne eine Konsole und wechsele in das wizipedia Verzeichnis ( z.Bsp.: "cd /home/user/wizipedia/")
+- erstelle nun eine Suchdatenbank
+	- für 32bit Systeme -> "./tools/startindex tools/arch-x86/index"
+	- und für 64bit -> "./tools/startindex tools/arch-x86_64/index"
+	- (den Quellcode findest du davon übrigens in "tools/src/")
+- warte... trink einen Kaffee / ess eine Pizza / tu irgendwas nutzliches...
+- kopiere dannach den gesamten "wizipedia" Ordner auf deine GP2X Wiz (SD-Karte)
+- starte das Program... erfreu dich dran... und vergiß nicht, mir Fehler zu melden
+
+
+3. Wo bekomm ich die letzte Version her?
+----------------------------------------
+
+Dieses Projekt ist auf http://sourceforge.net gehostet -> https://sourceforge.net/projects/wizipedia/
+Klicke auf den Menüpunkt "Files" um die letzte binär Version für die GP2X herunterzuladen.
+
+Um den Quellcode der letzten Entwicklerversion zu bekomen, tippe:
+git clone git://wizipedia.git.sourceforge.net/gitroot/wizipedia/wizipedia 
+
+
+4. Wie komiliere ich Wizipedia selber? (Quick-guide)
+--------------------------------------
+
+TODO
+
+

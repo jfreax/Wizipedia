@@ -1,0 +1,39 @@
+1. What is "Wizipedia"?
+-----------------------
+
+Wizipedia is an offline wikipedia reader for the GP2X Wiz.
+
+
+2. Install Wizipedia
+--------------------
+
+- download latest version (-> section 3) and unpack it on your harddrive (not on wiz!)
+- get the wikipedia dump version you want
+	for example all english wikipedia articles: wget http://download.wikipedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 (approximate 5GiB!)
+- then split this huge file in many small files: bzip2recover enwiki-latest-pages-articles.xml.bz2
+- delete the big file and copy the new files into the "wikipedia"-Folder under you Wizipedia installation directory
+- open a console and goto the wizipedia dir ( e.g. "cd /home/user/wizipedia/" )
+- start the indexing tools
+	- for 32bit -> "./tools/startindex tools/arch-x86/index"
+	- and 64bit -> "./tools/startindex tools/arch-x86_64/index"
+	- (the source it located in "tools/src/")
+- go and drink some coffee / eat pizza / do something usefull
+- copy the whole "wizipedia" folder to your GP2X Wiz (SD-Card)
+- start it... like it... and don't forgot to write me about bugs
+
+3. Where I can get the latest sources / binarys?
+------------------------------------------------
+
+This project is hosted on http://sourceforge.net -> https://sourceforge.net/projects/wizipedia/
+Click on "Files" to get the latest binary version for your wiz.
+
+To get the latest developer sourcecode type:
+git clone git://wizipedia.git.sourceforge.net/gitroot/wizipedia/wizipedia 
+
+
+4. HowTo compile Wizipedia myself? (Quick-guide)
+----------------------------------
+
+TODO
+
+
