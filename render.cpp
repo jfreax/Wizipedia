@@ -110,6 +110,7 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	/* ---------------- */
 	util::replace ( &text, "\n", " \n " );
 	util::replace ( &text, "\t", " \n " );
+	util::replace ( &text, "=== ", "===" ); util::replace ( &text, " ===", "===" );
 	util::replace ( &text, "== ", "==" ); util::replace ( &text, " ==", "==" );
 	/* find links */
 	links = util::replaceWildcard ( &text, "[[", "]]", " .-hyper|link-. " );
@@ -179,9 +180,15 @@ bool CRender::Render()
 		/* ''' Bold ''' */
 		if ( util::isTextWildcard ( &wordToRender, "\'\'\'", "\'\'\'", true ) ) {
 			font = GetWizipedia()->GetDefaultFontBold();
+
 		/* '' Oblique '' */
 		} else if ( util::isTextWildcard ( &wordToRender, "\'\'", "\'\'", true ) ) {
 			font = GetWizipedia()->GetDefaultFontOblique();
+		/* '' Header 3 '' */	
+		} else if ( util::isTextWildcard ( &wordToRender, "===", "===", true ) ) {
+			font = GetWizipedia()->GetHeader2Font(); /* TODO */
+			addLine = true;
+			addToIndex = 1;
 		/* '' Header 2 '' */	
 		} else if ( util::isTextWildcard ( &wordToRender, "==", "==", true ) ) {
 			font = GetWizipedia()->GetHeader2Font();
@@ -202,14 +209,8 @@ bool CRender::Render()
 			if ( findPipe != std::string::npos )
 				wordToRender = wordToRender.substr ( findPipe + 1 ); 
 			
-// 			rect.x += width;
 			color = &colorLink;
 		}
-// 		if ( color == &colorLink && ( util::replace ( &wordToRender, "]]" ) || util::replace ( &lastWordToRender, "]]" ) ) ) {
-// 			color = &colorDefault;
-// 		} else if ( util::replace ( &wordToRender, "[[" ) ) {
-// 			color = &colorLink;
-// 		}
 		
 		/* Render one word
 		--------------- */

@@ -21,6 +21,7 @@
 #define GUI_H
 
 // #include <SDL/SDL_video.h>
+#include <vector>
 #include <map>
 
 class SDL_Surface;
@@ -40,6 +41,7 @@ class CGui
 		bool wikiLogoMark;
 		double wikiLogoZoom;
 
+		int drawExtraKey;
 		SDL_Surface* key;
 		SDL_Surface* keyDel;
 		SDL_Surface* keyExtra;
@@ -47,8 +49,8 @@ class CGui
 		SDL_Surface* keyCaps;
 		SDL_Surface* keyText;
 		SDL_Rect keyboardLocation;
-		std::map < std::string, int >* keyPositions;
-		std::map < std::string, int >::iterator keyPressed;
+		std::vector < std::string >* keyPositions;
+		char keyPressed;
 		
 		SDL_Surface* bar;
 		SDL_Rect barLocation;

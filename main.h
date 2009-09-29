@@ -16,6 +16,8 @@ class CWizipedia
 	private:
 		bool run;
 		
+		std::string lang;
+		
 		CIndex* index;
 		
 		SDL_Surface* screen;
@@ -33,12 +35,13 @@ class CWizipedia
 		
 		FPSmanager fps;
 		
-		CGui gui;
+		CGui* gui;
 		CInput input;
 		CRender render;
 		
 	public:
-		CWizipedia();
+		CWizipedia ( int argc_, char **argv_ );
+		bool Initialize();
 		
 		bool RunMenu();
 		bool Run();
@@ -48,9 +51,11 @@ class CWizipedia
 		void Calc();
 		void Draw();
 		
+		std::string GetLang() { return lang; }
+		
 		SDL_Surface* GetScreen() { return screen; }
 		CIndex* GetIndex() { return index; }
-		CGui* GetGui() { return &gui; }	
+		CGui* GetGui() { return gui; }	
 		CRender* GetRender() { return &render; }
 		
 		int GetDefaultFontSize() { return defaultFontSize; }

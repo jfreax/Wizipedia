@@ -17,6 +17,8 @@
 
 */
 
+#include <fstream>
+
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_rotozoom.h>
 #include <SDL/SDL_gfxPrimitives.h>
@@ -88,44 +90,32 @@ CGui::~CGui()
 
 void CGui::LoadKeyboard()
 {
-	int x;
+	drawExtraKey = 0;
+	
 	keyboardLocation.x = 0; keyboardLocation.y = 240;
+	keyPositions = new std::vector < std::string >[10];
 	
-	keyPositions = new std::map < std::string, int >[4];
+	std::string filename = "data/keyboard/" + GetWizipedia()->GetLang();
+	std::ifstream file ( filename.c_str(), std::ios::in );
+	
+	if ( !file ) {
+		GetWizipedia()->Quit();
+		return;
+	}
+	
+	std::string fileLine, word;
+	std::stringstream streamLine, emptyStream();
+	for ( int i = 0; std::getline ( file, fileLine ); ++i ) {
+		streamLine.clear(); streamLine.str("");
+		streamLine << fileLine;
 
-// 	x = 256; keyPositions[0].insert ( std::make_pair < std::string, int > ( "D", x ) );
-	
-	x = 0;   keyPositions[1].insert ( std::make_pair < std::string, int > ( "q", x ) );
-	x = 32;  keyPositions[1].insert ( std::make_pair < std::string, int > ( "w", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "e", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "r", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "t", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "y", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "u", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "i", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "o", x ) );
-	x += 32; keyPositions[1].insert ( std::make_pair < std::string, int > ( "p", x ) );
-	
-	x = 16;  keyPositions[2].insert ( std::make_pair < std::string, int > ( "a", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "s", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "d", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "f", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "g", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "h", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "j", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "k", x ) );
-	x += 32; keyPositions[2].insert ( std::make_pair < std::string, int > ( "l", x ) );
-	
-	x = 0;   keyPositions[3].insert ( std::make_pair < std::string, int > ( "E", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "z", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "x", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "c", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "v", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "b", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "n", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( "m", x ) );
-	x += 32; keyPositions[3].insert ( std::make_pair < std::string, int > ( " ", x ) );
+		for ( int j = 0; j < 10 && !streamLine.str().empty(); ++j ) {
+			word.clear(); streamLine >> word;
 
+			if ( !word.empty() )
+				keyPositions[i].push_back ( word );
+		}
+	}
 }
 
 
@@ -220,57 +210,65 @@ void CGui::DrawKeyboard()
 	if ( keyboardLocation.x > 320 || keyboardLocation.y > 240 )
 		return;
 	
+
 	static SDL_Color color = { 220, 220, 220 };
-	static SDL_Rect rect;
+	static SDL_Rect rect, rectStr;
 	
-	for ( int i = 0; i < 4; ++i )
-	{
-		std::map < std::string, int >::iterator keyCurrent = keyPositions[i].begin();
-		for ( ; keyCurrent != keyPositions[i].end(); keyCurrent++ )
-		{
-			rect.x = (*keyCurrent).second; rect.y = 36 * i + keyboardLocation.y;
+	for ( int i = drawExtraKey; i < (4+drawExtraKey); ++i ) {
+		rect.x = keyPositions[i].size() % 2 ? 16 : 0;
+
+		for ( int j = 0; j < keyPositions[i].size(); ++j ) {
+			rect.y = 36 * (i-drawExtraKey) + keyboardLocation.y;
 			
-			/* */
-			if ( keyPressed == keyCurrent ) {
+			static SDL_Rect randRect;
+			randRect.x = randRect.y = 0;
+			if ( keyPressed == keyPositions[i][j].c_str()[0] ) {
 				static int nr = 0;
 				
-				rect.x += util::random ( -2, 2 );
-				rect.y += util::random ( -2, 2 );
+				randRect.x = util::random ( -2, 2 ); randRect.y = util::random ( -2, 2 );
+				rect.x += randRect.x;
+				rect.y += randRect.y;
 				
 				if ( ++nr > 400 * GetWizipedia()->GetFrameTime() ) {
-					keyPressed = std::map < std::string, int >::iterator(NULL);
+					keyPressed = -1;
 					nr = 0;
 				}
 			}
-			
+
 			/* Draw key-background */
-			switch ( (*keyCurrent).first.c_str()[0] ) {
+			switch ( keyPositions[i][j].c_str()[0] ) {
+				case '$':
+					break;
 				case 'D':
 					SDL_BlitSurface ( keyDel, NULL, GetWizipedia()->GetScreen(), &rect );
 					break;
 				case 'E':
 					SDL_BlitSurface ( keyExtra, NULL, GetWizipedia()->GetScreen(), &rect );
 					break;	
-				case ' ':
+				case 'S':
 					SDL_BlitSurface ( keySpace, NULL, GetWizipedia()->GetScreen(), &rect );
 					break;
 				case 'C':
 					SDL_BlitSurface ( keyCaps, NULL, GetWizipedia()->GetScreen(), &rect );
 					break;
-				
 				default:
 					SDL_BlitSurface ( key, NULL, GetWizipedia()->GetScreen(), &rect );
 					
 					/* Draw text */
-					SDL_Surface* keyText = TTF_RenderText_Blended( GetWizipedia()->GetKeyFont(), (*keyCurrent).first.c_str(), color );
-					rect.x += ( 15 - ( keyText->clip_rect.w ) / 2 ); rect.y += 4;
-					SDL_BlitSurface ( keyText, NULL, GetWizipedia()->GetScreen(), &rect );
+					if ( !keyPositions[i][j].empty() ) {
+						SDL_Surface* keyText = TTF_RenderText_Blended( GetWizipedia()->GetKeyFont(), keyPositions[i][j].c_str(), color );
+
+					rectStr = rect; rectStr.x += ( 15 - ( keyText->clip_rect.w ) / 2 ); rect.y += 4;
+					SDL_BlitSurface ( keyText, NULL, GetWizipedia()->GetScreen(), &rectStr );
 					SDL_FreeSurface ( keyText );
-					
+
+					}
 					break;
 			}
 
-
+			rect.x += 32;
+			rect.x -= randRect.x;
+			rect.y -= randRect.y;
 		}
 	}
 }
@@ -371,11 +369,9 @@ void CGui::DrawResults()
 			std::vector < std::string >::iterator resultCurrent = searchResults.begin();
 			for ( int i = searchResultsSize; resultCurrent != searchResults.end(); ++resultCurrent, --i )
 			{
-// 				std::cout << "i: " << i << " und " << searchResultsSize << std::endl;
 				/* marked */
 				if ( i == selectedResult ) {
 					boxRGBA ( GetWizipedia()->GetScreen(), resultLocationTmp.x+3, rect.y+2, resultLocationTmp.x + resultLocationTmp.w - 5, rect.y + rect.h - 3, 0, 0, 150, 80);
-// 					std::cout << resultLocation.x + resultLocationTmp.w << std::endl;
 				}
 				
 				pos = (*resultCurrent).find(":");
@@ -411,7 +407,14 @@ void CGui::AddChar ( char char_ )
 			}
 			--cursorPosition;
 			break;
-		
+		case 'E':
+			drawExtraKey = 4;
+			return;
+		case 'Q':
+			drawExtraKey = 0;
+			return;
+		case 'S':
+			char_ = ' ';
 		default:
 			substring = barText.substr ( 0, cursorPosition );
 			substring2 = barText.substr ( cursorPosition );
@@ -469,8 +472,7 @@ bool CGui::MouseClick ( bool clicked_ )
 	clickAnimation = 1;
 	clicked = clicked_;
 	
-	if ( clicked )
-	{
+	if ( clicked ) {
 		static int x, y;
 		SDL_GetMouseState ( &x, &y );
 		SDL_Rect mouseLoc = { x-1, y-1, 2, 2 };
@@ -484,43 +486,43 @@ bool CGui::MouseClick ( bool clicked_ )
 		if ( util::collideBox ( barLocation, mouseLoc ) ) {
 			return true;
 		}
+		
 		/*  ... on the OSD-Keyboard */
-		static SDL_Rect rect;  rect.h = 36;
-		for ( int i = 0; i < 4; ++i )
-		{
-			std::map < std::string, int >::iterator keyCurrent = keyPositions[i].begin();
-			for ( ; keyCurrent != keyPositions[i].end(); keyCurrent++ )
-			{
-				rect.x = (*keyCurrent).second; rect.y = 36 * i + keyboardLocation.y;
+		static SDL_Rect rect; rect.x = 0; rect.h = 36;
+		for ( int i = drawExtraKey; i < (4+drawExtraKey); ++i ) {
+			
+			rect.x = keyPositions[i].size() % 2 ? 16 : 0;
+			for ( int j = 0; j < keyPositions[i].size(); ++j ) {
+				rect.y = 36 * (i-drawExtraKey) + keyboardLocation.y;
 				
-				switch ( (*keyCurrent).first.c_str()[0] ) {
+				switch ( keyPositions[i][j].at(0) ) {
 					case 'D':
 						rect.w = 64;
 						break;
-					case ' ':
+					case 'S':
 						rect.w = 64;
 						break;
 					case 'l':
-						rect.w = 48;
-						break;
-					case 'a':
-						rect.x -= 16;
 						rect.w = 48;
 						break;
 					default:
 						rect.w = 32;
 				}
 				
-				if ( util::collideBox ( rect, mouseLoc ) ) {
-					keyPressed = keyCurrent;
+				if ( util::collideBox ( rect, mouseLoc ) && i != 10 ) {
+					keyPressed = keyPositions[i][j].c_str()[0];
 					
 					/* Add character to inputbar */
-					this->AddChar ( (*keyCurrent).first.c_str()[0] );
+					this->AddChar ( keyPositions[i][j].c_str()[0] );
 					
 					return true;
 				}
+				
+				rect.x += 32;
 
 			}
+			
+
 		}
 		
 	}

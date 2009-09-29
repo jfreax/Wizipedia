@@ -11,40 +11,78 @@
 #include "render.h"
 
 
-CWizipedia wizipedia;
+CWizipedia* wizipedia = NULL;
 
 
 int main ( int argc, char *argv[] )
 {
-	wizipedia.RunMenu();
+	wizipedia = new CWizipedia ( argc, argv );
+	
+	if ( wizipedia->Initialize() )
+		wizipedia->RunMenu();
+	else
+		return false;
 
-
-
+	delete wizipedia;
 	return 0;
 }
 
 
 CWizipedia* GetWizipedia()
 {
-	return &wizipedia;
+	return wizipedia;
 }
 
 
-CWizipedia::CWizipedia() :
+CWizipedia::CWizipedia ( int argc_, char **argv_ ) :
 	run ( true ), screenX ( 320 ), screenY ( 240 )
+{
+	/* Read argumentlines */
+	for ( int i = 1; i != argc_; ++i ) {
+		const std::string val ( argv_[i] );
+		
+		
+		if ( val.empty() ) {
+			continue;
+		} else if ( val == "-l" || val == "--lang" ) {
+			if ( i + 1 != argc_ ) {
+				++i;
+				lang = argv_[i];
+			}
+		}
+		
+	}
+
+	if ( lang.empty() ) {
+		lang = "en";
+	}
+}
+
+
+bool CWizipedia::Initialize()
 {
 	index = new CIndex ( "db/" ); 
 	srand ( (unsigned)time ( NULL ) ); 
-		
-	SDL_Init( SDL_INIT_JOYSTICK | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER );
+	
+	if ( SDL_Init ( SDL_INIT_JOYSTICK | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD ) == -1 ) {
+		return false;
+	}
+	
 	screen = SDL_SetVideoMode( 320, 240, 16, SDL_SWSURFACE );
+	if ( screen == NULL ) {
+		return false;
+	}
 	
 	SDL_WM_SetCaption ( "Wizipedia", NULL );
-// 	SDL_ShowCursor ( false );
-		
+	
+	#ifdef linux
+		SDL_ShowCursor ( true );
+	#else
+		SDL_ShowCursor ( false );
+	#endif
+	
 	/* Init fontsystem */
 	TTF_Init();
-	
 	this->SetDefaultFontSize ( 9 );
 	
 	barFont = TTF_OpenFont ( "data/fonts/DejaVuSans.ttf", 12 );
@@ -52,12 +90,17 @@ CWizipedia::CWizipedia() :
 	
 	if ( !defaultFont || !keyFont || !barFont || !defaultFontBold || !defaultFontOblique || !headerFont ) {
 		std::cerr << "ERROR: Can't load font from \"./data/fonts/\"" << std::endl;
-		GetWizipedia()->Quit();
+		return false;
 	}
 	
 	/* Init frameratemanager */
 	SDL_initFramerate ( &fps );
 	SDL_setFramerate ( &fps, 120 );
+	
+	/* Initialize the gui subsystem */
+	gui = new CGui();
+	
+	return true;
 }
 
 
@@ -86,14 +129,14 @@ bool CWizipedia::Run()
 void CWizipedia::Calc()
 {
 	render.Calc();
-	gui.Calc();
+	gui->Calc();
 }
 
 
 void CWizipedia::Draw()
 {
 	render.Draw();
-	gui.Draw();
+	gui->Draw();
 	
 	SDL_Flip ( this->GetScreen() );
 // 	SDL_FillRect ( this->GetScreen(), 0, SDL_MapRGB ( this->GetScreen()->format, 33, 35, 33 ) );
