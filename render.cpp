@@ -316,12 +316,8 @@ bool CRender::Draw()
 	/* Draw index */
 	boxRGBA ( GetWizipedia()->GetScreen(), 10, 10 - position, 200, -positionWIndex, 50, 50, 50, 255 );
 	std::map < SDL_Surface*, SDL_Rect >::iterator indexCurrent = index.begin();
-	for ( ; indexCurrent != index.end(); ++indexCurrent )
-	{
+	for ( ; indexCurrent != index.end(); ++indexCurrent ) {
 		rect = (*indexCurrent).second; rect.y -= position;
-		
-		
-// 		SDL_BlitSurface ( (*textCurrent).first, NULL, GetWizipedia()->GetScreen(), &rect );
 	}
 	
 
@@ -329,16 +325,14 @@ bool CRender::Draw()
 	
 	/* Draw text */
 	std::map < SDL_Surface*, SDL_Rect >::iterator textCurrent = renderText.begin();
-	for ( ; textCurrent != renderText.end(); ++textCurrent )
-	{
+	for ( ; textCurrent != renderText.end(); ++textCurrent ) {
 		rect = (*textCurrent).second; rect.y -= positionWIndex;
 		SDL_BlitSurface ( (*textCurrent).first, NULL, GetWizipedia()->GetScreen(), &rect );
 	}
 	
 	/* Draw horizontal lines */
 	std::vector < SDL_Rect >::iterator linesCurrent = lines.begin();
-	for ( ; linesCurrent != lines.end(); ++linesCurrent )
-	{
+	for ( ; linesCurrent != lines.end(); ++linesCurrent ) {
 		rect = (*linesCurrent); rect.y -= positionWIndex;
 		hlineRGBA ( GetWizipedia()->GetScreen(), rect.x, rect.w, rect.y, 100, 100, 100, 255 );
 	}

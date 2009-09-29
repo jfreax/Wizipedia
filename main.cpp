@@ -64,12 +64,14 @@ bool CWizipedia::Initialize()
 	index = new CIndex ( "db/" ); 
 	srand ( (unsigned)time ( NULL ) ); 
 	
-	if ( SDL_Init ( SDL_INIT_JOYSTICK | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD ) == -1 ) {
+	if ( SDL_Init ( SDL_INIT_JOYSTICK | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER ) == -1 ) {
+		std::cerr << "ERROR: SDL_INIT" << std::endl;
 		return false;
 	}
 	
 	screen = SDL_SetVideoMode( 320, 240, 16, SDL_SWSURFACE );
 	if ( screen == NULL ) {
+		std::cerr << "ERROR: SDL_INIT" << std::endl;
 		return false;
 	}
 	
@@ -83,6 +85,7 @@ bool CWizipedia::Initialize()
 	
 	/* Init fontsystem */
 	TTF_Init();
+	defaultFont = keyFont = barFont = defaultFontBold = defaultFontOblique = headerFont = NULL;
 	this->SetDefaultFontSize ( 9 );
 	
 	barFont = TTF_OpenFont ( "data/fonts/DejaVuSans.ttf", 12 );
@@ -92,7 +95,7 @@ bool CWizipedia::Initialize()
 		std::cerr << "ERROR: Can't load font from \"./data/fonts/\"" << std::endl;
 		return false;
 	}
-	
+
 	/* Init frameratemanager */
 	SDL_initFramerate ( &fps );
 	SDL_setFramerate ( &fps, 120 );
@@ -112,8 +115,7 @@ bool CWizipedia::RunMenu()
 
 bool CWizipedia::Run()
 {
-	while ( this->IsRunning() )
-	{
+	while ( this->IsRunning() ) {
 		SDL_framerateDelay( &fps );
 		
 		input.Check( this );
@@ -139,19 +141,21 @@ void CWizipedia::Draw()
 	gui->Draw();
 	
 	SDL_Flip ( this->GetScreen() );
-// 	SDL_FillRect ( this->GetScreen(), 0, SDL_MapRGB ( this->GetScreen()->format, 33, 35, 33 ) );
 	SDL_FillRect ( this->GetScreen(), 0, SDL_MapRGB ( this->GetScreen()->format, 0, 0, 0 ) );
-	
 }
 
 
 void CWizipedia::SetDefaultFontSize ( int size_ )
 {
-	TTF_CloseFont ( defaultFont );
-	TTF_CloseFont ( defaultFontBold );
-	TTF_CloseFont ( defaultFontOblique );
-	TTF_CloseFont ( headerFont );
-	
+	if ( defaultFont )
+		TTF_CloseFont ( defaultFont );
+	if ( defaultFontBold )
+		TTF_CloseFont ( defaultFontBold );
+	if ( defaultFontOblique )
+		TTF_CloseFont ( defaultFontOblique );
+	if ( headerFont )
+		TTF_CloseFont ( headerFont );
+
 	defaultFontSize = size_;
 	
 	defaultFont = TTF_OpenFont ( "data/fonts/DejaVuSans.ttf", defaultFontSize );
