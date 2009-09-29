@@ -135,7 +135,7 @@ bool CRender::Render()
 	SDL_Color colorDefault = { 255, 255, 255 };
 	SDL_Color colorLink = { 70, 70, 220 };
 	SDL_Color* color = &colorDefault;
-	SDL_Rect rect; rect.x = 1; rect.y = 3;
+	SDL_Rect rect; rect.x = 1; rect.y = 5;
 
 	/* Title */
 	SDL_Surface* currentWord = TTF_RenderText_Blended ( GetWizipedia()->GetHeaderFont(), title.c_str(), *color );
@@ -145,7 +145,7 @@ bool CRender::Render()
 	/* Add line under title */
 	rect.x = 0; rect.y += currentWord->h; rect.w = 320;
 	lines.push_back ( rect );
-	rect.y += 3;
+	rect.y += 3; rect.x = 2;
 	
 	/* Width of a Space-Character */
 	int width;
@@ -155,7 +155,8 @@ bool CRender::Render()
 	std::vector < std::string >::iterator currentLinks = links.begin();
 	
 	/* Find the next word -> render it -> save the rendered image */
-	bool addLine = false; int addToIndex = 0;
+	int addLine = false;
+	int addToIndex = 0, indexOne = 0, indexTwo = 0;
 	int lineBreak = 0, hightest = 0;
 	std::string wordToRender, lastWordToRender;
 	int i = 0, oldi = 0, lb = 0;
@@ -190,12 +191,12 @@ bool CRender::Render()
 		/* '' Header 3 '' */	
 		} else if ( util::isTextWildcard ( &wordToRender, "===", "===", true ) ) {
 			font = GetWizipedia()->GetHeader2Font(); /* TODO */
-			addLine = true;
-			addToIndex = 1;
+			addLine = 1; indexTwo++;
+			addToIndex = 2;
 		/* '' Header 2 '' */	
 		} else if ( util::isTextWildcard ( &wordToRender, "==", "==", true ) ) {
 			font = GetWizipedia()->GetHeader2Font();
-			addLine = true;
+			addLine = 1; indexOne++; indexTwo = 0;
 			addToIndex = 1;
 		} else {
 			font = GetWizipedia()->GetDefaultFont();
@@ -241,9 +242,20 @@ bool CRender::Render()
 			
 			/* Add a new entry to index */
 			if ( addToIndex ) {
-				rect.h = addToIndex;
+				switch ( addToIndex ) {
+					case 1:
+						wordToRender = util::lCast<std::string>( indexOne ) + "." + wordToRender;
+						break;
+					case 2:
+						wordToRender = util::lCast<std::string>( indexOne ) + "." + util::lCast<std::string>( indexTwo ) + "." + wordToRender;
+						break;	
+				
+				}
+				SDL_Surface* currentIndexWord = TTF_RenderText_Blended ( GetWizipedia()->GetDefaultFont(), wordToRender.c_str(), colorLink );
+				currentIndexWord->unused1 = addToIndex-1;
+				index.push_back ( currentIndexWord );
+				
 				addToIndex = 0;
-				index.insert ( std::make_pair < SDL_Surface*, SDL_Rect > ( currentWord, rect ) );
 			}
 			
 			/* End of a line? */
@@ -260,7 +272,7 @@ bool CRender::Render()
 			rect.x += currentWord->w;
 			
 			/* A line break is needed */
-			while ( lineBreak > 0 ) {
+			while ( lineBreak ) {
 				rect.y += lastWord->h + 1;
 				rect.x = 1;
 				
@@ -291,6 +303,7 @@ void CRender::Clear()
 	
 	renderText.clear();
 	lines.clear();
+	index.clear();
 }
 
 
@@ -312,15 +325,23 @@ bool CRender::Calc()
 bool CRender::Draw()
 {
 	/* Temporaly data */
-	static SDL_Rect rect;
+	static SDL_Rect rect, rect2;
 	static int positionWIndex;
 	positionWIndex = position - index.size() * ( 2 + TTF_FontHeight ( GetWizipedia()->GetDefaultFont() ) );
 	
 	/* Draw index */
-	boxRGBA ( GetWizipedia()->GetScreen(), 10, 10 - position, 200, -positionWIndex, 50, 50, 50, 255 );
-	std::map < SDL_Surface*, SDL_Rect >::iterator indexCurrent = index.begin();
-	for ( ; indexCurrent != index.end(); ++indexCurrent ) {
-		rect = (*indexCurrent).second; rect.y -= position;
+	if ( !index.empty() ) {
+		boxRGBA ( GetWizipedia()->GetScreen(), 20, 10 - position, 150, -positionWIndex + 5, 50, 50, 50, 255 );
+		rect.y = -position;
+		for ( int i = 0; i < index.size(); ++i ) {
+			rect.y += TTF_FontHeight ( GetWizipedia()->GetDefaultFont() );
+			rect.x = 25 + 10 * index[i]->unused1;
+			
+			rect2 = rect;
+			SDL_BlitSurface ( index[i], NULL, GetWizipedia()->GetScreen(), &rect2 );
+		}
+		
+		positionWIndex -= 8;
 	}
 	
 	/* Draw text */

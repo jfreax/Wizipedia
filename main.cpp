@@ -141,6 +141,7 @@ void CWizipedia::Draw()
 	gui->Draw();
 	
 	SDL_Flip ( this->GetScreen() );
+// 	SDL_FillRect ( this->GetScreen(), 0, SDL_MapRGB ( this->GetScreen()->format, 33, 36, 33 ) );
 	SDL_FillRect ( this->GetScreen(), 0, SDL_MapRGB ( this->GetScreen()->format, 0, 0, 0 ) );
 }
 

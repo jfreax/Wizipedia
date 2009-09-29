@@ -47,7 +47,7 @@ class CRender
 		std::vector < SDL_Rect > lines;
 		std::vector < std::string > links;
 		
-		std::map < SDL_Surface*, SDL_Rect > index; /* SDL_Rect::h = the level in the index */
+		std::vector < SDL_Surface* > index; /* int = the level in the index */
 		
 	public:
 		CRender();
