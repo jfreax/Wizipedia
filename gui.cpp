@@ -77,6 +77,7 @@ CGui::CGui()
 	
 	/* Resultbar */
 	resultLocation.y = 31; resultLocation.x = 30;
+	resultLocation.h = 232; resultLocation.w = 96;
 	newSearch = false;
 	selectedResult = 0;
 }
@@ -487,6 +488,20 @@ bool CGui::MouseClick ( bool clicked_ )
 			return true;
 		}
 		
+		
+		/* ... on Searchresults */
+		if ( !searchResults.empty() && util::collideBox ( resultLocation, mouseLoc ) ) {
+			selectedResult = ( y-resultLocation.y-3 ) / 12;
+			if ( !selectedResult )
+				selectedResult = searchResultsSize;
+			
+			this->SetShowMenu ( false );
+			GetWizipedia()->GetRender()->Lockup ( GetWizipedia()->GetGui()->GetSelectedFile(), GetWizipedia()->GetGui()->GetSelected() );
+			GetWizipedia()->GetRender()->Render();
+			
+			return true;
+		}
+		
 		/*  ... on the OSD-Keyboard */
 		static SDL_Rect rect; rect.x = 0; rect.h = 36;
 		for ( int i = drawExtraKey; i < (4+drawExtraKey); ++i ) {
@@ -562,6 +577,7 @@ std::string CGui::GetSelected()
 			return (*resultCurrent).substr ( (*resultCurrent).find(":") + 1 );
 		}
 	}
+	return "";
 }
 
 
@@ -574,6 +590,7 @@ std::string CGui::GetSelectedFile()
 			return (*resultCurrent).substr ( 0, (*resultCurrent).find(":") );
 		}
 	}
+	return "";
 }
 
 

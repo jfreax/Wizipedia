@@ -61,9 +61,11 @@ void CInput::Check ( CWizipedia* wizipedia )
 						GetWizipedia()->GetGui()->GoDown();
 						break;
 					case GP2X_BUTTON_B:
-						wizipedia->GetGui()->SetShowMenu ( false );
-						wizipedia->GetRender()->Lockup ( GetWizipedia()->GetGui()->GetSelectedFile(), GetWizipedia()->GetGui()->GetSelected() );
-						wizipedia->GetRender()->Render();
+						if ( wizipedia->GetGui()->IsMenuShow() ) {
+							wizipedia->GetGui()->SetShowMenu ( false );
+							wizipedia->GetRender()->Lockup ( GetWizipedia()->GetGui()->GetSelectedFile(), GetWizipedia()->GetGui()->GetSelected() );
+							wizipedia->GetRender()->Render();
+						}
 						break;
 					case GP2X_BUTTON_L:
 						GetWizipedia()->GetGui()->AddChar ( 'D' );
@@ -79,11 +81,9 @@ void CInput::Check ( CWizipedia* wizipedia )
 						GetWizipedia()->GetGui()->MoveCursorRight();
 						break;
 					case SDLK_UP:
-// 						GetWizipedia()->GetGui()->ToggleShowMenu();
 						GetWizipedia()->GetGui()->GoUp();
 						break;
 					case SDLK_DOWN:
-// 						GetWizipedia()->GetGui()->AddChar ( 'D' );
 						GetWizipedia()->GetGui()->GoDown();
 						break;
 				}
@@ -91,12 +91,12 @@ void CInput::Check ( CWizipedia* wizipedia )
 				
 				if ( keys[SDLK_ESCAPE] ) {
 					wizipedia->Quit();
-				}
-				
-				if ( keys[SDLK_RETURN] ) {
-					wizipedia->GetGui()->SetShowMenu ( false );
-					wizipedia->GetRender()->Lockup ( GetWizipedia()->GetGui()->GetSelectedFile(), GetWizipedia()->GetGui()->GetSelected() );
-					wizipedia->GetRender()->Render();
+				} else if ( keys[SDLK_RETURN] ) {
+					if ( wizipedia->GetGui()->IsMenuShow() ) {
+						wizipedia->GetGui()->SetShowMenu ( false );
+						wizipedia->GetRender()->Lockup ( GetWizipedia()->GetGui()->GetSelectedFile(), GetWizipedia()->GetGui()->GetSelected() );
+						wizipedia->GetRender()->Render();
+					}
 				}
 				
 				if ( keys[SDLK_m] ) {
@@ -157,20 +157,6 @@ void CInput::MouseClick ( int x, int y )
 		GetWizipedia()->GetGui()->SetShowMenu ( false );
 	}
 	
-// 	/* Click on Wikipedia-Logo */
-// 	if ( util::collideBox ( GetWizipedia()->GetGui()->GetWikiLogoLocation(), mouseLoc ) ) {
-// 		GetWizipedia()->GetGui()->ToggleShowMenu();
-// 		
-// 	/*  ... on the OSD-Keyboard */
-// // 	} else if ( util::collideBox ( GetWizipedia()->GetGui()->GetKeyboardLocation(), mouseLoc ) ) {
-// 		
-// 	/*  ... on Inputbar */
-// 	} else if ( util::collideBox ( GetWizipedia()->GetGui()->GetBarLocation(), mouseLoc ) ) {
-// 		
-// 	/* ... on - ohhh... other */
-// 	} else {
-// 		GetWizipedia()->GetGui()->SetShowMenu ( false );
-// 	}
 }
 
 

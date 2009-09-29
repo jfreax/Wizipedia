@@ -40,6 +40,9 @@ CRender::CRender()
 
 bool CRender::Lockup ( std::string filename_, std::string title_ )
 {
+	if ( filename_.empty() || title_.empty() )
+		return false;
+	
 	title = title_; 
 	
 	/* Delete old content */
