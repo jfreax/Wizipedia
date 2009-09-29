@@ -40,6 +40,7 @@ class CRender
 		std::string text;
 		
 		int position;
+		int maxPosition;
 		double postionOffset;
 		std::map < SDL_Surface*, SDL_Rect > renderText;
 		std::map < SDL_Surface*, SDL_Rect > renderLinks;

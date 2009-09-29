@@ -270,7 +270,7 @@ bool CRender::Render()
 			}
 		}
 		
-		
+		maxPosition = rect.y;
 		lineBreak = 0;
 	}
 	
@@ -320,9 +320,6 @@ bool CRender::Draw()
 		rect = (*indexCurrent).second; rect.y -= position;
 	}
 	
-
-	
-	
 	/* Draw text */
 	std::map < SDL_Surface*, SDL_Rect >::iterator textCurrent = renderText.begin();
 	for ( ; textCurrent != renderText.end(); ++textCurrent ) {
@@ -336,7 +333,6 @@ bool CRender::Draw()
 		rect = (*linesCurrent); rect.y -= positionWIndex;
 		hlineRGBA ( GetWizipedia()->GetScreen(), rect.x, rect.w, rect.y, 100, 100, 100, 255 );
 	}
-	
 }
 
 
@@ -347,6 +343,9 @@ bool CRender::ChangePosition ( double offset_ )
 	
 	if ( position < 0 )
 		position = 0;
+	else if ( position > maxPosition )
+		position = maxPosition;
+		
 	
 	if ( postionOffset > -0.1f & postionOffset < 0.1f )
 		postionOffset = 0;
