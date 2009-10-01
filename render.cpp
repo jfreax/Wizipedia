@@ -47,17 +47,31 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	title = title_; 
 	
 	/* Delete old content */
+	std::map < SDL_Surface*, SDL_Rect >::iterator renderTextCurrent = renderText.begin();
+	for ( ; renderTextCurrent != renderText.end(); ++renderTextCurrent ) {
+		SDL_FreeSurface ( ((*renderTextCurrent).first) );
+	}
+	std::vector < SDL_Surface* >::iterator renderLinksCurrent = renderLinks.begin();
+	for ( ; renderLinksCurrent != renderLinks.end(); ++renderLinksCurrent ) {
+		SDL_FreeSurface ( (*renderLinksCurrent) );
+	}
+	
+	
 	position = 0;
 	postionOffset = 0;
 	data.clear();
 	text.clear();
+	renderText.clear();
+	renderLinks.clear();
+	renderLinksPosition.clear();
+	linkName.clear();
+	linkURL.clear();
 	this->Clear();
 	
 	BZFILE * bFile = NULL;
 	std::string filename = filename_;
 	
 	/* Open file */
-	std::cout << filename << std::endl;
 	bFile = BZ2_bzopen ( filename.c_str(), "rb" );
 	if ( !bFile )
 	{
@@ -79,18 +93,24 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	
 	/* find article */
 	int pageBegin = data.find ( "<title>" + title_ + "</title>" );
-	data = data.substr( pageBegin );
+	if ( pageBegin != std::string::npos )
+		data = data.substr( pageBegin );
+	
 	int pageEnd = data.find ( "</page>" );
-	data = data.substr( 0, pageEnd );
+	if ( pageEnd != std::string::npos ) /* TODO open next file */
+		data = data.substr( 0, pageEnd );
 	
 	/* find the text */
 	int textBegin = data.find ( "<text" );
-	text = data.substr( textBegin );
+	if ( textBegin != std::string::npos )
+		text = data.substr( textBegin );
+	
 	int textEnd = text.find ( "</text>" ); /* TODO open next file, if end is not here! */
-	text = text.substr( 0, textEnd );
+	if ( textEnd != std::string::npos )
+		text = text.substr( 0, textEnd );
 	
 	/* delete <text> */
-	text = text.substr ( text.find ( "<text xml:space=\"preserve\">" )+27 );
+	util::replace ( &text, "<text xml:space=\"preserve\">" );
 	
 	/* Delete unneeded 
 	   --------------- */
@@ -120,10 +140,23 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 // 	util::replace ( &text, "=== ", "===" ); util::replace ( &text, " ===", "===" );
 // 	util::replace ( &text, "== ", "==" ); util::replace ( &text, " ==", "==" );
 // 	util::replace ( &text, "\'\'\'", " \'\'\' " ); util::replace ( &text, "\'\'", " \'\' " );
+
 	/* find links */
-	links = util::replaceWildcard ( &text, "[[", "]]", " .-hyper|link-. " );
-	
-	
+	std::vector < std::string > linksTmp = util::replaceWildcard ( &text, "[[", "]]", " .-hyper|link-. " );
+	std::vector < std::string >::iterator currentLinks = linksTmp.begin();
+	std::string name, url;
+	for ( ; currentLinks != linksTmp.end(); ++currentLinks ) {
+		
+		int findPipe = (*currentLinks).find ( "|" );
+		if ( findPipe != std::string::npos ) {
+			name = (*currentLinks).substr ( findPipe + 1 ); 
+			url = (*currentLinks).substr ( 0, findPipe ); 
+		} else {
+			name = url = (*currentLinks);
+		}
+		
+		linkName.push_back( name ); linkURL.push_back( url );
+	}
 	
 	return true;
 }
@@ -156,10 +189,11 @@ bool CRender::Render()
 	int width; TTF_SizeText ( GetWizipedia()->GetDefaultFont(), " ", &width, NULL );
 	
 	/* Hyperlinklist */
-	std::vector < std::string >::iterator currentLinks = links.begin();
+	std::vector < std::string >::iterator currentLinkName = linkName.begin();
 
 	/* Find the next word -> render it -> save the rendered image */
 	int addLine = false;
+	bool isLink = false;
 	int addToIndex = 0, indexOne = 0, indexTwo = 0;
 	int lineBreak = 0, hightest = 0;
 
@@ -189,14 +223,11 @@ bool CRender::Render()
 		/* Find hyperlinks
 		   --------------- */
 		if ( util::replace ( &wordToRender, ".-hyper|link-." ) ) {
-			wordToRender = (*currentLinks);
-			++currentLinks;
-			
-			int findPipe = wordToRender.find ( "|" );
-			if ( findPipe != std::string::npos )
-				wordToRender = wordToRender.substr ( findPipe + 1 ); 
+			wordToRender = (*currentLinkName);
+			++currentLinkName;
 			
 			color = &colorLink;
+			isLink = true;
 		}
 		
 		/* Pre-Format */
@@ -236,7 +267,13 @@ bool CRender::Render()
 			
 			/* Save the rendered image 
 			   ----------------------- */
-			renderText.insert ( std::make_pair < SDL_Surface*, SDL_Rect > ( currentWord, rect ) );
+			if ( isLink ) {
+				renderLinks.push_back ( currentWord );
+				renderLinksPosition.push_back ( rect );
+// 				renderLinks.insert ( std::make_pair < SDL_Surface*, SDL_Rect > ( currentWord, rect ) );
+			} else
+				renderText.insert ( std::make_pair < SDL_Surface*, SDL_Rect > ( currentWord, rect ) );
+			
 			
 			/* Move "cursor" to next position */
 			rect.x += currentWord->w;
@@ -270,6 +307,7 @@ bool CRender::Render()
 			} else if ( !wordToIndex.empty() ) {
 				SDL_Surface* currentIndexWord = TTF_RenderText_Blended ( GetWizipedia()->GetDefaultFont(), wordToIndex.c_str(), colorLink );
 				currentIndexWord->unused1 = addToIndex;
+
 				index.push_back ( currentIndexWord );	
 				
 				wordToIndex.clear();
@@ -294,6 +332,7 @@ bool CRender::Render()
 		
 		maxPosition = rect.y;
 		lineBreak = 0;
+		isLink = false;
 	}
 	
 	return true;
@@ -356,6 +395,17 @@ bool CRender::Format ( std::string* word_, std::string find_, FORMAT format_ )
 }
 
 
+bool CRender::MouseClick ( int x_, int y_ )
+{
+	mouseLoc.x = x_-1;
+	mouseLoc.y = y_-1;
+	mouseLoc.w = 2;
+	mouseLoc.h = 2;
+	
+	return false;
+}
+
+
 void CRender::Clear()
 {
 	std::map < SDL_Surface*, SDL_Rect >::iterator textCurrent = renderText.begin();
@@ -376,8 +426,6 @@ void CRender::Clear()
 
 bool CRender::Calc()
 {
-
-	
 	if ( postionOffset ) {
 		if ( postionOffset > 0.1f )
 			this->ChangePosition ( postionOffset - ( GetWizipedia()->GetFrameTime() * 8 ) );
@@ -395,11 +443,11 @@ bool CRender::Draw()
 	/* Temporaly data */
 	static SDL_Rect rect, rect2;
 	static int positionWIndex;
-	positionWIndex = position - index.size() * ( 2 + TTF_FontHeight ( GetWizipedia()->GetDefaultFont() ) );
+	positionWIndex = position - (index.size()+1) * ( TTF_FontHeight ( GetWizipedia()->GetDefaultFont() ) );
 	
 	/* Draw index */
 	if ( !index.empty() ) {
-		boxRGBA ( GetWizipedia()->GetScreen(), 20, 10 - position, indexWidth + 40, -positionWIndex + 5, 30, 30, 30, 255 );
+		boxRGBA ( GetWizipedia()->GetScreen(), 20, 10 - position, indexWidth + 40, -positionWIndex, 30, 30, 30, 255 );
 		rect.y = -position;
 		for ( int i = 0; i < index.size(); ++i ) {
 			rect.y += TTF_FontHeight ( GetWizipedia()->GetDefaultFont() );
@@ -407,6 +455,11 @@ bool CRender::Draw()
 			
 			rect2 = rect;
 			SDL_BlitSurface ( index[i], NULL, GetWizipedia()->GetScreen(), &rect2 );
+			
+			if ( util::collideBox ( rect2, mouseLoc ) ) {
+				mouseLoc.x = mouseLoc.y = mouseLoc.w = mouseLoc.h = 0;
+				std::cout << "jep" << std::endl;
+			}
 		}
 		
 		positionWIndex -= 8;
@@ -417,6 +470,45 @@ bool CRender::Draw()
 	for ( ; textCurrent != renderText.end(); ++textCurrent ) {
 		rect = (*textCurrent).second; rect.y -= positionWIndex;
 		SDL_BlitSurface ( (*textCurrent).first, NULL, GetWizipedia()->GetScreen(), &rect );
+	}
+	
+	/* Draw hyperlink */
+	static std::string link; static int findPipe;
+	std::vector < std::string >::iterator currentLinkURL = linkURL.begin();
+	std::vector < SDL_Surface* >::iterator linkCurrent = renderLinks.begin();
+	std::vector < SDL_Rect >::iterator linkCurrentPosition = renderLinksPosition.begin();
+	for ( ; linkCurrent != renderLinks.end(); ++linkCurrent ) {
+		rect = (*linkCurrentPosition); rect.y -= positionWIndex;
+		SDL_BlitSurface ( (*linkCurrent), NULL, GetWizipedia()->GetScreen(), &rect );
+		
+		if ( util::collideBox ( rect, mouseLoc ) ) {
+			mouseLoc.x = mouseLoc.y = mouseLoc.w = mouseLoc.h = 0;
+			int size = 1;
+			
+			std::vector < std::string > results = GetWizipedia()->GetIndex()->Search ( (*currentLinkURL), &size );
+			
+			if ( size ) {
+				std::string data = ( *results.begin() );
+				
+				int pos = data.find ( ":" );
+				if ( pos != std::string::npos )
+					data = data.substr ( 0, pos );
+				
+				std::cout <<(*currentLinkURL) << ": " << data << " -> " << pos << std::endl;
+				GetWizipedia()->GetRender()->Lockup ( data, (*currentLinkURL) );
+				std::cout << "Lockup fertig" << std::endl;
+				GetWizipedia()->GetRender()->Render();
+				
+				std::cout << "Render fertig" << std::endl;
+				return false;
+			} else {
+				std::cerr << "Article not found: " << (*currentLinkURL) << std::endl;;
+			}
+			
+// 			std::cout << (*currentLinkURL) << std::endl;
+		}
+		++currentLinkURL;
+		++linkCurrentPosition;
 	}
 	
 	/* Draw horizontal lines */

@@ -52,13 +52,19 @@ class CRender
 		
 		std::string text;
 		
+		SDL_Rect mouseLoc;
+		
 		int position;
 		int maxPosition;
 		double postionOffset;
 		std::map < SDL_Surface*, SDL_Rect > renderText;
-		std::map < SDL_Surface*, SDL_Rect > renderLinks;
+		
+		std::vector < SDL_Surface* > renderLinks;
+		std::vector < SDL_Rect > renderLinksPosition;
+		std::vector < std::string > linkName;
+		std::vector < std::string > linkURL;
+		
 		std::vector < SDL_Rect > lines;
-		std::vector < std::string > links;
 		
 		std::vector < SDL_Surface* > index; /* int = the level in the index */
 		
@@ -77,12 +83,15 @@ class CRender
 		bool Render();
 		bool Format ( std::string* word_, std::string find_, FORMAT format_ );
 		
+		bool MouseClick ( int x_, int y_ );
+		
 		void Clear();
 		
 		bool Calc();
 		bool Draw();
 		
 		bool ChangePosition ( double offset_ );
+		double GetPositionMovement() { return postionOffset; }
 };
 
 #endif // RENDER_H
