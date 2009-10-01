@@ -53,6 +53,7 @@ bool findTextBetweenSearch ( std::string* text, std::string searchBegin, std::st
 
 /* Replace a string with a new one */
 int replace ( std::string* text, std::string searchStr, std::string replaceStr = "" );
+int replaceFirst ( std::string* text, std::string searchStr, std::string replaceStr = "" );
 
 /* Replace a strint from searchBegin to searchEnd with a new text and return the text between this */
 std::vector < std::string > replaceWildcard ( std::string* text, std::string searchBegin, std::string searchEnd, std::string replaceStr = "" );

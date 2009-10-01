@@ -34,6 +34,8 @@ CRender::CRender()
 	
 	position = 50;
 	postionOffset = 0.0f;
+	
+	format = NONE;
 }
 
 
@@ -52,13 +54,16 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	this->Clear();
 	
 	BZFILE * bFile = NULL;
-	std::string filename = "wikipedia/" + filename_;
+	std::string filename = filename_;
 	
 	/* Open file */
+	std::cout << filename << std::endl;
 	bFile = BZ2_bzopen ( filename.c_str(), "rb" );
 	if ( !bFile )
 	{
-		std::cout << "Error while opening file \"" + filename_ + "\"" << std::endl;
+		std::cerr << "Error while opening file \"" + filename + "\"" << std::endl;
+		data = "Error while opening file: \"" + filename + "\"";
+		text = data;
 		return false;
 	}
 	
@@ -112,8 +117,9 @@ bool CRender::Lockup ( std::string filename_, std::string title_ )
 	/* ---------------- */
 	util::replace ( &text, "\n", " \n " );
 	util::replace ( &text, "\t", " \n " );
-	util::replace ( &text, "=== ", "===" ); util::replace ( &text, " ===", "===" );
-	util::replace ( &text, "== ", "==" ); util::replace ( &text, " ==", "==" );
+// 	util::replace ( &text, "=== ", "===" ); util::replace ( &text, " ===", "===" );
+// 	util::replace ( &text, "== ", "==" ); util::replace ( &text, " ==", "==" );
+// 	util::replace ( &text, "\'\'\'", " \'\'\' " ); util::replace ( &text, "\'\'", " \'\' " );
 	/* find links */
 	links = util::replaceWildcard ( &text, "[[", "]]", " .-hyper|link-. " );
 	
@@ -130,7 +136,7 @@ bool CRender::Render()
 	if ( data.empty() )
 		return false;
 	
-	TTF_Font* font = GetWizipedia()->GetDefaultFont();
+	renderFont = GetWizipedia()->GetDefaultFont();
 	SDL_Color colorDefault = { 255, 255, 255 };
 	SDL_Color colorLink = { 70, 70, 220 };
 	SDL_Color* color = &colorDefault;
@@ -147,17 +153,16 @@ bool CRender::Render()
 	rect.y += 3; rect.x = 2;
 	
 	/* Width of a Space-Character */
-	int width;
-	TTF_SizeText ( GetWizipedia()->GetDefaultFont(), " ", &width, NULL );
+	int width; TTF_SizeText ( GetWizipedia()->GetDefaultFont(), " ", &width, NULL );
 	
 	/* Hyperlinklist */
 	std::vector < std::string >::iterator currentLinks = links.begin();
-	
+
 	/* Find the next word -> render it -> save the rendered image */
 	int addLine = false;
 	int addToIndex = 0, indexOne = 0, indexTwo = 0;
 	int lineBreak = 0, hightest = 0;
-	std::string wordToRender, lastWordToRender;
+
 	int i = 0, oldi = 0, lb = 0;
 	while ( i != -1 ) {
 		/* Restore defaults */
@@ -180,28 +185,7 @@ bool CRender::Render()
 		/* at first, find all LFs */
 		lineBreak += util::replace ( &wordToRender, "\n" );
 		
-		/* ''' Bold ''' */
-		if ( util::isTextWildcard ( &wordToRender, "\'\'\'", "\'\'\'", true ) ) {
-			font = GetWizipedia()->GetDefaultFontBold();
-
-		/* '' Oblique '' */
-		} else if ( util::isTextWildcard ( &wordToRender, "\'\'", "\'\'", true ) ) {
-			font = GetWizipedia()->GetDefaultFontOblique();
-		/* '' Header 3 '' */	
-		} else if ( util::isTextWildcard ( &wordToRender, "===", "===", true ) ) {
-			font = GetWizipedia()->GetHeader2Font(); /* TODO */
-			addLine = 1; indexTwo++;
-			addToIndex = 2;
-		/* '' Header 2 '' */	
-		} else if ( util::isTextWildcard ( &wordToRender, "==", "==", true ) ) {
-			font = GetWizipedia()->GetHeader2Font();
-			addLine = 1; indexOne++; indexTwo = 0;
-			addToIndex = 1;
-		} else {
-			font = GetWizipedia()->GetDefaultFont();
-		}
 		
-
 		/* Find hyperlinks
 		   --------------- */
 		if ( util::replace ( &wordToRender, ".-hyper|link-." ) ) {
@@ -215,9 +199,23 @@ bool CRender::Render()
 			color = &colorLink;
 		}
 		
+		/* Pre-Format */
+		this->Format ( &wordToRender, "\'\'\'", BOLD );
+		this->Format ( &wordToRender, "\'\'", ITALIC );
+		
+		if ( this->Format ( &wordToRender, "===", HEADER3 ) ) {
+			indexTwo++;
+			wordToIndex = util::lCast<std::string>( indexOne ) + "." + util::lCast<std::string>( indexTwo ) + ".";
+			util::replace ( &wordToRender, " " );
+		} else if ( this->Format ( &wordToRender, "==", HEADER2 ) ) {
+			addLine = 1; indexOne++; indexTwo = 0;
+			wordToIndex = util::lCast<std::string>( indexOne ) + ".";
+			util::replace ( &wordToRender, " " );
+		}
+		
 		/* Render one word
 		--------------- */
-		currentWord = TTF_RenderText_Blended ( font, wordToRender.c_str(), *color );
+		currentWord = TTF_RenderText_Blended ( renderFont, wordToRender.c_str(), *color );
 
 		
 		/* Rendering ok? */
@@ -229,33 +227,6 @@ bool CRender::Render()
 			}
 			
 			
-			/* Add a horizontal line */
-			if ( addLine ) {
-				static SDL_Rect lineRect;
-				addLine = false;
-				
-				lineRect = rect;
-				lineRect.y = rect.y + currentWord->h; lineRect.x = 0; lineRect.w = 320;
-				lines.push_back ( lineRect );
-			}
-			
-			/* Add a new entry to index */
-			if ( addToIndex ) {
-				switch ( addToIndex ) {
-					case 1:
-						wordToRender = util::lCast<std::string>( indexOne ) + "." + wordToRender;
-						break;
-					case 2:
-						wordToRender = util::lCast<std::string>( indexOne ) + "." + util::lCast<std::string>( indexTwo ) + "." + wordToRender;
-						break;	
-				
-				}
-				SDL_Surface* currentIndexWord = TTF_RenderText_Blended ( GetWizipedia()->GetDefaultFont(), wordToRender.c_str(), colorLink );
-				currentIndexWord->unused1 = addToIndex-1;
-				index.push_back ( currentIndexWord );
-				
-				addToIndex = 0;
-			}
 			
 			/* End of a line? */
 			if ( rect.x + currentWord->w > 320 ) {
@@ -278,17 +249,110 @@ bool CRender::Render()
 				--lineBreak;
 			}
 			
+			
+			/* Add a horizontal line */
+			if ( addLine ) {
+				static SDL_Rect lineRect;
+				addLine = false;
+				
+				lineRect = rect;
+				lineRect.y = rect.y + currentWord->h-1; lineRect.x = 0; lineRect.w = 320;
+				lines.push_back ( lineRect );
+			}			
+			
+			/* Add a new entry to index */
+			if ( format == HEADER2 ) {
+				addToIndex = 0;
+				wordToIndex += wordToRender;
+			} else if ( format == HEADER3 ) {
+				addToIndex = 1;
+				wordToIndex += wordToRender;
+			} else if ( !wordToIndex.empty() ) {
+				SDL_Surface* currentIndexWord = TTF_RenderText_Blended ( GetWizipedia()->GetDefaultFont(), wordToIndex.c_str(), colorLink );
+				currentIndexWord->unused1 = addToIndex;
+				index.push_back ( currentIndexWord );	
+				
+				wordToIndex.clear();
+				rect.y += currentWord->h + 5;
+				
+				if ( indexWidth < currentIndexWord->w ) {
+					indexWidth = currentIndexWord->w;
+				}
+			}
+			
 			/* Remove the space character after a link in the next word */
 			if ( color == &colorLink ) {
 				rect.x -= width;
 			}
 		}
 		
+		/* Post-Format */
+		this->Format ( &formatWord, "\'\'\'", BOLD );
+		this->Format ( &formatWord, "\'\'", ITALIC );
+		this->Format ( &formatWord, "===", HEADER3 );
+		this->Format ( &formatWord, "==", HEADER2 );
+		
 		maxPosition = rect.y;
 		lineBreak = 0;
 	}
 	
 	return true;
+}
+
+
+bool CRender::Format ( std::string* word_, std::string find_, FORMAT format_ )
+{
+	if ( util::replaceFirst ( word_, find_ ) ) {
+		formatWord = *word_;
+		util::replace ( word_, find_ );
+		
+		switch ( format_ ) {
+			case BOLD:
+				if ( format == BOLD ) {
+					format = NONE;
+				} else {
+					format = BOLD;
+					renderFont = GetWizipedia()->GetDefaultFontBold();
+					return true;
+				}
+				break;
+			case ITALIC:
+				if ( format == ITALIC ) {
+					format = NONE;
+				} else {
+					format = ITALIC;
+					renderFont = GetWizipedia()->GetDefaultFontOblique();
+					return true;
+				}
+				break;
+			case HEADER2:
+				if ( format == HEADER2 ) {
+					format = NONE;
+				} else {
+					format = HEADER2;
+					renderFont = GetWizipedia()->GetHeaderFont();
+					return true;
+				}
+				break;
+			case HEADER3:
+				if ( format == HEADER3 ) {
+					format = NONE;
+				} else {
+					format = HEADER3;
+					renderFont = GetWizipedia()->GetHeader2Font();
+					return true;
+				}
+				break;
+			default:
+				renderFont = GetWizipedia()->GetDefaultFont();
+				break;	
+			
+		}
+
+		renderFont = GetWizipedia()->GetDefaultFont();
+	}
+
+	return false;
 }
 
 
@@ -303,6 +367,10 @@ void CRender::Clear()
 	renderText.clear();
 	lines.clear();
 	index.clear();
+	
+	format = NONE;
+	indexWidth = 0;
+	
 }
 
 
@@ -318,6 +386,7 @@ bool CRender::Calc()
 		
 	}
 	
+	return true;
 }
 
 
@@ -330,7 +399,7 @@ bool CRender::Draw()
 	
 	/* Draw index */
 	if ( !index.empty() ) {
-		boxRGBA ( GetWizipedia()->GetScreen(), 20, 10 - position, 150, -positionWIndex + 5, 30, 30, 30, 255 );
+		boxRGBA ( GetWizipedia()->GetScreen(), 20, 10 - position, indexWidth + 40, -positionWIndex + 5, 30, 30, 30, 255 );
 		rect.y = -position;
 		for ( int i = 0; i < index.size(); ++i ) {
 			rect.y += TTF_FontHeight ( GetWizipedia()->GetDefaultFont() );

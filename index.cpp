@@ -31,10 +31,8 @@ std::vector < std::string > CIndex::Search ( std::string search_, int* size_ )
 {
 	std::vector < std::string > output;
 	
-	if ( search_.length() - search_.find_last_of(" ") > 4 && search_.length() > 3 )
-		search_ += "*";
-	
-
+// 	if ( search_.length() - search_.find_last_of(" ") > 5 && search_.length() > 4 )
+// 		search_ += "*";
 	
 	// Catch any Xapian::Error exceptions thrown
 	try {

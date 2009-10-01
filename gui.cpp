@@ -38,6 +38,7 @@ CGui::CGui()
 	key = IMG_Load ( "data/gfx/key.png" );
 	keyDel = IMG_Load ( "data/gfx/keyDel.png" );
 	keyExtra = IMG_Load ( "data/gfx/keyExtra.png" );
+	keyABC = IMG_Load ( "data/gfx/keyABC.png" );
 	keySpace = IMG_Load ( "data/gfx/keySpace.png" );
 	keyCaps = IMG_Load ( "data/gfx/keyCaps.png" );
 	result = IMG_Load ( "data/gfx/result.png" );
@@ -54,7 +55,7 @@ CGui::CGui()
 	}
 	
 	/* Test if all loaded correct */
-	if ( !wikiLogo || !bar || !key || !keyDel || !keyExtra || !keySpace || !keyCaps || !result || !loading ) {
+	if ( !wikiLogo || !bar || !key || !keyDel || !keyExtra || !keyABC || !keySpace || !keyCaps || !result || !loading ) {
 		std::cerr << "ERROR: Can't load graphics from folder \"./data/gfx/\"" << std::endl;
 		GetWizipedia()->Quit();
 	}
@@ -75,8 +76,8 @@ CGui::CGui()
 	barRenderText = NULL;
 	
 	/* Resultbar */
-	resultLocation.y = 31; resultLocation.x = 30;
-	resultLocation.h = 232; resultLocation.w = 96;
+	resultLocation.x = 30;  resultLocation.y = 31;
+	resultLocation.w = 232; resultLocation.h = 96;
 	newSearch = false;
 	selectedResult = 0;
 }
@@ -93,6 +94,7 @@ void CGui::LoadKeyboard()
 	drawExtraKey = 0;
 	
 	keyboardLocation.x = 0; keyboardLocation.y = 240;
+	keyboardLocation.w = 320; keyboardLocation.h = 200;
 	keyPositions = new std::vector < std::string >[10];
 	
 	std::string filename = "data/keyboard/" + GetWizipedia()->GetLang();
@@ -244,6 +246,9 @@ void CGui::DrawKeyboard()
 					break;
 				case 'E':
 					SDL_BlitSurface ( keyExtra, NULL, GetWizipedia()->GetScreen(), &rect );
+					break;	
+				case 'Q':
+					SDL_BlitSurface ( keyABC, NULL, GetWizipedia()->GetScreen(), &rect );
 					break;	
 				case 'S':
 					SDL_BlitSurface ( keySpace, NULL, GetWizipedia()->GetScreen(), &rect );
@@ -487,12 +492,13 @@ bool CGui::MouseClick ( bool clicked_ )
 			return true;
 		}
 		
-		
 		/* ... on Searchresults */
 		if ( !searchResults.empty() && util::collideBox ( resultLocation, mouseLoc ) ) {
 			selectedResult = ( y-resultLocation.y-3 ) / 12;
-			if ( !selectedResult )
-				selectedResult = searchResultsSize;
+// 			if ( !selectedResult )
+// 				selectedResult = searchResultsSize;
+			if ( selectedResult >= searchResultsSize )
+				selectedResult = 1;
 			
 			this->SetShowMenu ( false );
 			GetWizipedia()->GetRender()->Lockup ( GetWizipedia()->GetGui()->GetSelectedFile(), GetWizipedia()->GetGui()->GetSelected() );
@@ -502,41 +508,43 @@ bool CGui::MouseClick ( bool clicked_ )
 		}
 		
 		/*  ... on the OSD-Keyboard */
-		static SDL_Rect rect; rect.x = 0; rect.h = 36;
-		for ( int i = drawExtraKey; i < (4+drawExtraKey); ++i ) {
-			
-			rect.x = keyPositions[i].size() % 2 ? 16 : 0;
-			for ( int j = 0; j < keyPositions[i].size(); ++j ) {
-				rect.y = 36 * (i-drawExtraKey) + keyboardLocation.y;
+		if ( util::collideBox ( keyboardLocation, mouseLoc ) ) {
+			static SDL_Rect rect; rect.x = 0; rect.h = 36;
+			for ( int i = drawExtraKey; i < (4+drawExtraKey); ++i ) {
 				
-				switch ( keyPositions[i][j].at(0) ) {
-					case 'D':
-						rect.w = 64;
-						break;
-					case 'S':
-						rect.w = 64;
-						break;
-					case 'l':
-						rect.w = 48;
-						break;
-					default:
-						rect.w = 32;
+				rect.x = keyPositions[i].size() % 2 ? 16 : 0;
+				for ( int j = 0; j < keyPositions[i].size(); ++j ) {
+					rect.y = 36 * (i-drawExtraKey) + keyboardLocation.y;
+					
+					switch ( keyPositions[i][j].at(0) ) {
+						case 'D':
+							rect.w = 64;
+							break;
+						case 'S':
+							rect.w = 64;
+							break;
+						case 'l':
+							rect.w = 48;
+							break;
+						default:
+							rect.w = 32;
+					}
+					
+					if ( util::collideBox ( rect, mouseLoc ) && i != 10 ) {
+						keyPressed = keyPositions[i][j].c_str()[0];
+						
+						/* Add character to inputbar */
+						this->AddChar ( keyPositions[i][j].c_str()[0] );
+						
+						return true;
+					}
+					
+					rect.x += 32;
+					
 				}
 				
-				if ( util::collideBox ( rect, mouseLoc ) && i != 10 ) {
-					keyPressed = keyPositions[i][j].c_str()[0];
-					
-					/* Add character to inputbar */
-					this->AddChar ( keyPositions[i][j].c_str()[0] );
-					
-					return true;
-				}
 				
-				rect.x += 32;
-
 			}
-			
-
 		}
 		
 	}

@@ -27,6 +27,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class SDL_Surface;
 class SDL_Rect;
 
+
+enum FORMAT
+{
+	NONE,
+	
+	BOLD,
+	ITALIC,
+	
+	HEADER1,
+	HEADER2,
+	HEADER3
+};
+
+
 class CRender
 {
 	private:
@@ -48,12 +62,21 @@ class CRender
 		
 		std::vector < SDL_Surface* > index; /* int = the level in the index */
 		
+		std::string wordToRender, lastWordToRender, wordToIndex;
+		
+		TTF_Font* renderFont;
+		FORMAT format;
+		std::string formatWord;
+		
+		int indexWidth;
+		
 	public:
 		CRender();
-		
 		bool Lockup ( std::string filename_, std::string title_ );
 		
 		bool Render();
+		bool Format ( std::string* word_, std::string find_, FORMAT format_ );
+		
 		void Clear();
 		
 		bool Calc();

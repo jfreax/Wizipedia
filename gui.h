@@ -44,6 +44,7 @@ class CGui
 		SDL_Surface* key;
 		SDL_Surface* keyDel;
 		SDL_Surface* keyExtra;
+		SDL_Surface* keyABC;
 		SDL_Surface* keySpace;
 		SDL_Surface* keyCaps;
 		SDL_Surface* keyText;

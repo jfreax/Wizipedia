@@ -121,6 +121,20 @@ int replace ( std::string* text, std::string searchStr, std::string replaceStr )
 }
 
 
+int replaceFirst ( std::string* text, std::string searchStr, std::string replaceStr )
+{
+	int i = text->find ( searchStr );
+	if ( i != std::string::npos ) {
+		text->replace ( i, searchStr.length(), replaceStr );
+		
+		i = text->find ( searchStr, i+replaceStr.length() );
+		return true;
+	}
+	
+	return false;
+}
+
+
 std::vector < std::string > replaceWildcard ( std::string* text, std::string searchBegin, std::string searchEnd, std::string replaceStr )
 {
 	int results = 0;
