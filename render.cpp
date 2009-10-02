@@ -402,6 +402,8 @@ bool CRender::MouseClick ( int x_, int y_ )
 	mouseLoc.w = 2;
 	mouseLoc.h = 2;
 	
+	std::cout << "blöd " << std::endl;
+	
 	return false;
 }
 

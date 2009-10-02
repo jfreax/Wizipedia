@@ -16,7 +16,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#include <time.h>
 #include <SDL/SDL.h>
+
 #include "main.h"
 #include "input.h"
 #include "util.h"
@@ -27,7 +29,7 @@ void CInput::Check ( CWizipedia* wizipedia )
 	SDL_Joystick* joystick = SDL_JoystickOpen(0);
 	SDL_JoystickUpdate();
 	
-	static bool mouseMoved = false;
+	static int lastTimeClick = SDL_GetTicks();
 	static int x, y, oldX, oldY, downOldY;
 	static int first = 0;
 	static Uint8* keys;
@@ -121,16 +123,20 @@ void CInput::Check ( CWizipedia* wizipedia )
 				downOldY = 0;
 				first = 0;
 				
-				this->MouseClick ( x, y, mouseMoved );
-				mouseMoved = false;
+				this->MouseClick ( x, y );
+				
+				if ( SDL_GetTicks() - lastTimeClick < 300 ) {
+					GetWizipedia()->GetRender()->MouseClick ( x, y );
+				}
+				
+				lastTimeClick = SDL_GetTicks();
 				break;
 		}
 	}
-	
+
 	/* Mouse moved */
 	if ( x != oldX || y != oldY ) {
 		this->MouseMove ( x, y );
-		mouseMoved = true;
 	}
 	
 	/* To move screen with touchscreen */
@@ -149,20 +155,17 @@ void CInput::Check ( CWizipedia* wizipedia )
 }
 
 
-void CInput::MouseClick ( int x, int y, bool mouseMoved )
+void CInput::MouseClick ( int x, int y )
 {
 	SDL_Rect mouseLoc = { x-1, y-1, 2, 2 };
 	
 	/* Test if clicked on GUI */
 	if ( GetWizipedia()->GetGui()->MouseClick ( true ) ) {
 		;
-	} else if ( !GetWizipedia()->GetRender()->GetPositionMovement() && GetWizipedia()->GetRender()->MouseClick( x, y ) ) {
-		;
 	} else {
 		/* Not clicked gui */
 		GetWizipedia()->GetGui()->SetShowMenu ( false );
 	}
-	
 }
 
 

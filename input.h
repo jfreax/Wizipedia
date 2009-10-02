@@ -46,7 +46,7 @@ class CInput
 	public:
 		void Check ( class CWizipedia* wizpedia );
 		
-		void MouseClick ( int x, int y, bool mouseMoved );
+		void MouseClick ( int x, int y );
 		void MouseMove ( int x, int y );
 	
 };
